@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Upload | Cognito Task Manager</title>
+  <style>
+    :root {
+      --primary: #4361ee;
+      --success: #4cc9f0;
+      --danger: #f72585;
+      --warning: #f8961e;
+      --light: #f8f9fa;
+      --dark: #212529;
+      --gray: #6c757d;
+      --white: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f2f5;
+      color: var(--dark);
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+      animation: fadeIn 0.5s ease;
+    }
+
+    h1 {
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-size: 2.5rem;
+    }
+
+    .card {
+      background-color: var(--white);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.4s ease;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 50px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-right: 1rem;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button.login-btn {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+
+    .button.logout-btn {
+      background-color: var(--danger);
+      color: var(--white);
+    }
+
+    .button.upload-btn {
+      background-color: var(--success);
+      color: var(--white);
+    }
+
+    .status {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 5px;
+      background-color: rgba(248, 249, 250, 0.8);
+    }
+
+    .status.success {
+      background-color: rgba(76, 201, 240, 0.1);
+      color: var(--success);
+    }
+
+    .status.error {
+      background-color: rgba(247, 37, 133, 0.1);
+      color: var(--danger);
+    }
+
+    .status.loading {
+      background-color: rgba(248, 150, 30, 0.1);
+      color: var(--warning);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--white);
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+      
+      .button {
+        width: 100%;
+        margin-bottom: 1rem;
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>File Upload</h1>
+      <div class="auth-buttons">
+        <button id="loginBtn" class="button login-btn">
+          <span>🔐</span> Login with Cognito
+        </button>
+        <button id="logoutBtn" class="button logout-btn hidden">
+          <span>🚪</span> Logout
+        </button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="form-group">
+        <label for="uploadInput">Select file to upload</label>
+        <input type="file" id="uploadInput">
+      </div>
+      <button id="uploadBtn" class="button upload-btn">
+        <span>📤</span> Upload File
+      </button>
+      <div id="status" class="status">
+        <em>Select a file and click upload.</em>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const config = {
+      clientId: "rffnr9k5egbu8b8ce24u4vftt",
+      domain: "eu-north-1fpueju15x.auth.eu-north-1.amazoncognito.com",
+      redirectUri: "http://localhost:3000", // Important: Must match Cognito app client settings
+      apiUrl: "https://bsy1fraaje.execute-api.eu-north-1.amazonaws.com/prod"
+    };
+
+    // DOM Elements
+    const elements = {
+      loginBtn: document.getElementById('loginBtn'),
+      logoutBtn: document.getElementById('logoutBtn'),
+      uploadBtn: document.getElementById('uploadBtn'),
+      uploadInput: document.getElementById('uploadInput'),
+      status: document.getElementById('status')
+    };
+
+    // Initialize the app
+    function init() {
+      setupEventListeners();
+      handleAuthRedirect();
+      checkAuthState();
+    }
+
+    // Set up event listeners
+    function setupEventListeners() {
+      elements.loginBtn.addEventListener('click', login);
+      elements.logoutBtn.addEventListener('click', logout);
+      elements.uploadBtn.addEventListener('click', uploadFile);
+    }
+
+    // Handle authentication redirect from Cognito
+    function handleAuthRedirect() {
+      const hash = window.location.hash;
+      if (hash.includes('id_token')) {
+        const match = hash.match(/id_token=([^&]+)/);
+        if (match) {
+          sessionStorage.setItem("id_token", match[1]);
+          // Clean up URL by removing the hash
+          window.history.replaceState(null, "", window.location.pathname);
+          updateStatus('Login successful!', 'success');
+        }
+      }
+    }
+
+    // Check authentication state
+    function checkAuthState() {
+      const token = sessionStorage.getItem("id_token");
+      const isAuthenticated = !!token;
+      
+      elements.loginBtn.classList.toggle('hidden', isAuthenticated);
+      elements.logoutBtn.classList.toggle('hidden', !isAuthenticated);
+      
+      if (!isAuthenticated) {
+        updateStatus('Please log in to upload files', 'error');
+      }
+    }
+
+    // Update status message
+    function updateStatus(message, type = 'info') {
+      elements.status.innerHTML = message;
+      elements.status.className = `status ${type}`;
+    }
+
+    // Show loading state
+    function showLoading(show) {
+      if (show) {
+        elements.uploadBtn.innerHTML = '<span class="loading"></span> Uploading...';
+        elements.uploadBtn.disabled = true;
+        updateStatus('Processing...', 'loading');
+      } else {
+        elements.uploadBtn.innerHTML = '<span>📤</span> Upload File';
+        elements.uploadBtn.disabled = false;
+      }
+    }
+
+    // Login function
+    function login() {
+      const url = `https://${config.domain}/login?client_id=${config.clientId}&response_type=token&scope=email+openid+profile&redirect_uri=${config.redirectUri}`;
+      window.location.href = url;
+    }
+
+    // Logout function
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = `https://${config.domain}/logout?client_id=${config.clientId}&logout_uri=${config.redirectUri}`;
+    }
+
+    // Upload file to S3
+    async function uploadFile() {
+      const token = sessionStorage.getItem("id_token");
+      const file = elements.uploadInput.files[0];
+      
+      if (!token) {
+        updateStatus('Please log in first', 'error');
+        return;
+      }
+      
+      if (!file) {
+        updateStatus('Please select a file', 'error');
+        return;
+      }
+
+      showLoading(true);
+
+      try {
+        // Step 1: Get signed URL from your Lambda
+        updateStatus('Getting secure upload URL...', 'loading');
+        
+        const res = await fetch(`${config.apiUrl}/GetUploadUrlFunction?fileName=${encodeURIComponent(file.name)}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || 'Failed to get upload URL');
+        }
+        
+        const { uploadUrl, key } = await res.json();
+
+        // Step 2: Upload file directly to S3
+        updateStatus('Uploading file to S3...', 'loading');
+        
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+          body: file
+        });
+
+        if (!uploadRes.ok) throw new Error('Upload failed');
+
+        // Success!
+        updateStatus(`✅ File uploaded successfully!<br>Key: ${key}`, 'success');
+        elements.uploadInput.value = ''; // Clear file input
+        
+      } catch (err) {
+        console.error('Upload error:', err);
+        updateStatus(`❌ Error: ${err.message}`, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    // Initialize the application when DOM is loaded
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
