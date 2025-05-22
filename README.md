@@ -37,4 +37,17 @@ This is a full-stack serverless task management application built on AWS. It all
 ---
 
 ## 🛠️ Project Structure
+cognito-task-app/
+│
+├── index.html                 # Main frontend UI (HTML, CSS, JS)
+├── scripts/
+│   └── upload-script.js       # Handles task creation, file uploads, and API calls
+├── lambda/
+│   ├── createTask.js          # Inserts new task into RDS + DynamoDB, then sends to SQS
+│   ├── getUploadUrl.js        # Returns pre-signed S3 URL for file uploads
+│   ├── getTasks.js            # Fetches tasks for the current user
+│   └── processQueue.js        # Triggered by SQS, sends email confirmations via Nodemailer
+├── .env.sample                # Template for environment variables (credentials NOT included)
+├── screenshots/               # Folder to store required deployment screenshots
+└── README.md                  # Full project documentation
 
