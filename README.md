@@ -21,15 +21,26 @@
 ```mermaid
 graph LR
     U[User]-->|1: Login|C(Cognito)
-    U-->|2: Submit Task|G[API Gateway]
-    C-->|JWT|G
-    G-->|3: Process|L[Lambda]
-    L-->|4a: Store|R[(PostgreSQL)]
-    L-->|4b: Cache|D[(DynamoDB)]
-    L-->|5: Queue|Q[SQS]
-    Q-->|6: Trigger|M[Mailer Lambda]
-    M-->|7: Send|N[(Nodemailer)]
-    U-->|8: Upload|S[/S3 Bucket\]
+    U-->|2: Visit App|EC2[EC2: Static Hosting]
+    EC2-->|3: Serve|UI[index.html + JS]
+
+    UI-->|4: Auth|C
+    C-->|5: JWT|UI
+
+    UI-->|6: File Upload|S3[S3 Bucket]
+    UI-->|7: Send Metadata|G[API Gateway]
+    G-->|8: Proxy|VPC[VPC (with private Lambda)]
+    VPC-->|9: Logic|L[Lambda: createTask.js]
+
+    L-->|10a: Write|R[(PostgreSQL RDS)]
+    L-->|10b: Cache|D[(DynamoDB)]
+    L-->|10c: Notify|Q[SQS Queue]
+
+    Q-->|11: Trigger|M[Lambda: processQueue.js]
+    M-->|12: Email|N[(Nodemailer SMTP)]
+
+    R-->|fileKey|S3
+    D-->|fileKey|S3
 ```
 
 ### 4. Project Structure Block
@@ -52,19 +63,21 @@ graph TD
 
 ## ⚡ Tech Stack
 
-| Layer        | Technology        | Benefit                   |
-| ------------ | ----------------- | ------------------------- |
-| **Frontend** | Vanilla JS        | Zero framework bloat      |
-| **Auth**     | Cognito           | Enterprise-grade security |
-| **Compute**  | Lambda            | Auto-scaling powerhouse   |
-| **Storage**  | S3 + RDS + Dynamo | Perfect data trio         |
+| Layer        | Technology        | Benefit                    |
+| ------------ | ----------------- | -------------------------- |
+| **Frontend** | Vanilla JS + EC2  | Lightweight UI hosting     |
+| **Auth**     | Cognito           | Enterprise-grade security  |
+| **Compute**  | Lambda            | Auto-scaling powerhouse    |
+| **Storage**  | S3 + RDS + Dynamo | Perfect data trio          |
+| **Infra**    | VPC               | Secure Lambda and RDS comm |
 
 ## 🔄 Data Flow
 
 1. **Auth**: User → Cognito → JWT
-2. **Task**: Form → API → Lambda → DBs
-3. **Files**: Direct S3 uploads
-4. **Emails**: SQS → Lambda → Inbox
+2. **App Load**: EC2 → index.html + JS
+3. **File Upload**: Direct to S3
+4. **Task Submit**: Metadata → API Gateway → VPC → Lambda → DBs
+5. **Notification**: SQS → Lambda → Email via Nodemailer
 
 ### 8. License Block
 
