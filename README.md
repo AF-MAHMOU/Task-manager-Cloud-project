@@ -11,10 +11,11 @@
 ## 🌟 Why This Rocks
 
 ✅ **Zero servers** - 100% serverless architecture
-✅ **Battle-tested** - Dual database redundancy
-✅ **Secure by design** - End-to-end encryption
-✅ **Cost efficient** - Pay only for what you use
-✅ **Blazing fast** - Edge-optimized delivery
+✅ **Battle-tested** - Dual database redundancy with PostgreSQL & DynamoDB
+✅ **Secure by design** - Cognito authentication and VPC-isolated Lambda
+✅ **Cost efficient** - Serverless, scalable, and optimized usage
+✅ **Blazing fast** - CloudFront edge-optimized static UI delivery
+✅ **Seamless UX** - Direct-to-S3 file uploads, async task creation, instant feedback
 
 ## 🏗️ Architecture Blueprint
 
@@ -29,15 +30,14 @@ graph LR
 
     UI-->|6: File Upload|S3[S3 Bucket]
     UI-->|7: Send Metadata|G[API Gateway]
-    G-->|8: Proxy|VPC[VPC (with private Lambda)]
-    VPC-->|9: Logic|L[Lambda: createTask.js]
+    G-->|8: Proxy|VPC_Lambda[VPC + Lambda: createTask.js]
 
-    L-->|10a: Write|R[(PostgreSQL RDS)]
-    L-->|10b: Cache|D[(DynamoDB)]
-    L-->|10c: Notify|Q[SQS Queue]
+    VPC_Lambda-->|9a: Write|R[(PostgreSQL RDS)]
+    VPC_Lambda-->|9b: Cache|D[(DynamoDB)]
+    VPC_Lambda-->|9c: Notify|Q[SQS Queue]
 
-    Q-->|11: Trigger|M[Lambda: processQueue.js]
-    M-->|12: Email|N[(Nodemailer SMTP)]
+    Q-->|10: Trigger|M[Lambda: processQueue.js]
+    M-->|11: Email|N[(Nodemailer SMTP)]
 
     R-->|fileKey|S3
     D-->|fileKey|S3
@@ -63,22 +63,46 @@ graph TD
 
 ## ⚡ Tech Stack
 
-| Layer        | Technology        | Benefit                    |
-| ------------ | ----------------- | -------------------------- |
-| **Frontend** | Vanilla JS + EC2  | Lightweight UI hosting     |
-| **Auth**     | Cognito           | Enterprise-grade security  |
-| **Compute**  | Lambda            | Auto-scaling powerhouse    |
-| **Storage**  | S3 + RDS + Dynamo | Perfect data trio          |
-| **Infra**    | VPC               | Secure Lambda and RDS comm |
+| Layer        | Technology        | Benefit                               |
+| ------------ | ----------------- | ------------------------------------- |
+| **Frontend** | Vanilla JS + EC2  | Lightweight UI, hosted via EC2        |
+| **Auth**     | Cognito           | Secure user login & JWT issuance      |
+| **Compute**  | Lambda            | Stateless logic handling, async flows |
+| **Storage**  | S3 + RDS + Dynamo | Reliable, fast, and durable storage   |
+| **Infra**    | VPC               | Secure connectivity for Lambda/RDS    |
+| **Queueing** | SQS               | Decoupled email and processing layer  |
+| **Email**    | Nodemailer (SMTP) | Easy transactional notifications      |
 
 ## 🔄 Data Flow
 
-1. **Auth**: User → Cognito → JWT
-2. **App Load**: EC2 → index.html + JS
-3. **File Upload**: Direct to S3
-4. **Task Submit**: Metadata → API Gateway → VPC → Lambda → DBs
-5. **Notification**: SQS → Lambda → Email via Nodemailer
+1. **Auth**: User logs in via Cognito, receives JWT
+2. **App Load**: EC2 hosts `index.html`, JS interacts via API
+3. **File Upload**: Direct PUT to S3 using pre-signed URLs
+4. **Task Submit**: Task metadata sent to Lambda via API Gateway (inside VPC)
+5. **DB Write**: Lambda writes to PostgreSQL and DynamoDB
+6. **Queue Trigger**: SQS triggers `processQueue.js` Lambda
+7. **Notification**: Email sent to user via Nodemailer + Gmail SMTP
 
-### 8. License Block
+### 6. License Block
 
-No license bro
+## 🚦 License - "The MIT License But With More Sass"
+
+This project is licensed under the **"I'm Not a Lawyer But Here's Some Rules" License**:
+
+```mermaid
+graph LR
+    A[Your Interest] --> B{Read License?}
+    B -->|No| C[Enjoy!]
+    B -->|Yes| D[Still Enjoy!]
+    C --> E[Happy Coding]
+    D --> E
+    E --> F[Just Don't Sue Us]
+```
+
+**By using this code you agree to:**
+
+**-Bring snacks to the next standup**
+
+**-Not judge our questionable Lambda naming conventions**
+
+**-Pretend the documentation was always this good**
