@@ -6,7 +6,6 @@
 ![DynamoDB](https://img.shields.io/badge/DynamoDB-NoSQL-yellow?logo=amazon-dynamodb\&style=for-the-badge)
 ![SQS](https://img.shields.io/badge/SQS-Queue-purple?logo=amazon-sqs\&style=for-the-badge)
 
-🔗 **Live Demo**: [https://d4jy0dgm09bv1.cloudfront.net](https://d4jy0dgm09bv1.cloudfront.net) Running :)
 
 ## 🌟 Why This Rocks
 
